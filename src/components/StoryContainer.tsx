@@ -32,7 +32,7 @@ export const StoryContainer: React.FC<StoryContainerProps> = ({
         </div>
       ) : (
         messages.map((message) => (
-          <MessageBubble key={message.id} message={message} />
+          <MessageBubble key={message.id} message={message} showImage={false} />
         ))
       )}
 

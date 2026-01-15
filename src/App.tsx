@@ -2,6 +2,7 @@ import React from 'react';
 import { StoryContainer } from './components/StoryContainer';
 import { StoryInput } from './components/StoryInput';
 import { SettingsPanel } from './components/SettingsPanel';
+import { ImageGallery } from './components/ImageGallery';
 import { useStory } from './hooks/useStory';
 import './App.css';
 
@@ -34,9 +35,15 @@ function App() {
         onRegenerateImage={regenerateLastImage}
       />
 
-      <main className="app-main">
-        <StoryContainer messages={messages} isGenerating={isGenerating} />
-        <StoryInput onSubmit={generateStoryResponse} disabled={isGenerating} />
+      <main className="app-main split-layout">
+        <div className="chat-panel">
+          <StoryContainer messages={messages} isGenerating={isGenerating} />
+          <StoryInput onSubmit={generateStoryResponse} disabled={isGenerating} />
+        </div>
+
+        <div className="image-panel">
+          <ImageGallery messages={messages} isGenerating={isGenerating} />
+        </div>
       </main>
 
       <footer className="app-footer">

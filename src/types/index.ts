@@ -3,6 +3,7 @@ export interface Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
   imageUrl?: string;
+  imagePrompt?: string; // Store the image prompt separately (not shown to user)
   timestamp: number;
 }
 

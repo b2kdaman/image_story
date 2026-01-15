@@ -1,13 +1,37 @@
 import { useState, useCallback } from 'react';
 import { lmStudioClient } from '../api/lmstudio';
 import { comfyUIClient } from '../api/comfyui';
+import { parseStoryResponse, cleanStoryText } from '../utils/parser';
 import type { Message, LMStudioMessage } from '../types';
 
-const DEFAULT_SYSTEM_PROMPT = `You are an interactive storyteller creating an immersive roleplay experience.
+const DEFAULT_SYSTEM_PROMPT = `You are an interactive storyteller creating an immersive FIRST-PERSON roleplay experience.
 Generate engaging, descriptive narratives based on user actions and choices.
-Keep responses concise but vivid (2-4 paragraphs).
-Focus on sensory details, emotions, and atmosphere.
-Always end with a situation that invites user interaction.`;
+
+CRITICAL RULES:
+- ALL story text must be written in FIRST-PERSON perspective (use "I", "my", "me")
+- ALL image prompts must describe scenes from FIRST-PERSON POV (what the character sees)
+- Focus on immersive sensory details - what you see, hear, feel, smell, touch
+- End each story segment with a situation that invites user interaction
+
+Your response MUST be in this exact format:
+[STORY]
+Write 2-4 paragraphs of first-person narrative here. Use "I" perspective throughout. Example: "I step forward and notice...", "My hand reaches out...", "I feel the cold air..."
+[/STORY]
+
+[IMAGE]
+Write a first-person POV image prompt. Describe what the character SEES from their perspective. Use terms like: "first person view", "POV shot", "looking at", "view of", "from perspective of character". Include: setting, lighting, mood, what's in front of the character, atmospheric details, cinematic style.
+[/IMAGE]
+
+EXAMPLE:
+[STORY]
+I push open the heavy wooden door, and it creaks loudly in the silence. Before me stretches a vast chamber, its walls covered in glowing blue runes that pulse with an otherworldly light. I feel the ancient magic tingling on my skin as I take my first cautious step inside.
+[/STORY]
+
+[IMAGE]
+First person POV view of ancient stone temple chamber, glowing blue magical runes on walls ahead, mysterious atmospheric lighting, dust particles floating in volumetric light rays, stone floor visible in foreground, immersive perspective, cinematic composition, photorealistic, wide angle view
+[/IMAGE]
+
+Always use both tags in your response.`;
 
 export const useStory = () => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -39,29 +63,33 @@ export const useStory = () => {
       }));
 
       // Generate story response
-      const storyResponse = await lmStudioClient.generateStoryResponse(
+      const rawResponse = await lmStudioClient.generateStoryResponse(
         conversationHistory,
         userInput,
         systemPrompt
       );
 
-      // Create assistant message (without image initially)
+      // Parse the response to extract story text and image prompt
+      const { storyText, imagePrompt } = parseStoryResponse(rawResponse);
+      const cleanedStoryText = cleanStoryText(storyText);
+
+      console.log('Story text:', cleanedStoryText);
+      console.log('Image prompt:', imagePrompt);
+
+      // Create assistant message with only the story text (user shouldn't see the image prompt)
       const assistantMessage: Message = {
         id: `msg_${Date.now()}_assistant`,
         role: 'assistant',
-        content: storyResponse,
+        content: cleanedStoryText,
+        imagePrompt: imagePrompt, // Store for later use (regeneration)
         timestamp: Date.now()
       };
       addMessage(assistantMessage);
 
-      // Generate image if enabled
-      if (autoGenerateImages) {
+      // Generate image if enabled and we have an image prompt
+      if (autoGenerateImages && imagePrompt) {
         try {
-          // Generate image prompt from story context
-          const imagePrompt = await lmStudioClient.generateImagePrompt(storyResponse);
-          console.log('Generated image prompt:', imagePrompt);
-
-          // Generate image with ComfyUI
+          // Generate image with ComfyUI using the extracted image prompt
           const imageUrl = await comfyUIClient.generateImage(imagePrompt);
 
           // Update message with image
@@ -107,7 +135,15 @@ export const useStory = () => {
     try {
       setIsGenerating(true);
 
-      const imagePrompt = await lmStudioClient.generateImagePrompt(lastAssistantMessage.content);
+      // Use stored image prompt if available, otherwise generate new one
+      let imagePrompt = lastAssistantMessage.imagePrompt;
+
+      if (!imagePrompt) {
+        // Fallback: ask LLM to generate an image prompt from the story text
+        imagePrompt = await lmStudioClient.generateImagePrompt(lastAssistantMessage.content);
+      }
+
+      console.log('Regenerating image with prompt:', imagePrompt);
       const imageUrl = await comfyUIClient.generateImage(imagePrompt);
 
       setMessages(prev =>

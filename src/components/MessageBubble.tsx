@@ -3,9 +3,10 @@ import type { Message } from '../types';
 
 interface MessageBubbleProps {
   message: Message;
+  showImage?: boolean;
 }
 
-export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
+export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, showImage = true }) => {
   const isUser = message.role === 'user';
 
   return (
@@ -21,7 +22,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
         <p>{message.content}</p>
       </div>
 
-      {message.imageUrl && (
+      {showImage && message.imageUrl && (
         <div className="message-image">
           <img src={message.imageUrl} alt="Generated scene" />
         </div>

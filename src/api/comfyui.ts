@@ -84,67 +84,173 @@ export class ComfyUIClient {
   }
 
   /**
+   * Enhance prompt with quality tags and first-person perspective
+   */
+  private enhancePrompt(prompt: string): string {
+    const qualityTags = [
+      'high quality',
+      'masterpiece',
+      'best quality',
+      'highly detailed',
+      '8k uhd',
+      'professional',
+      'sharp focus',
+      'perfect composition',
+      'immersive first person perspective',
+      'POV shot'
+    ];
+
+    return `${prompt}, ${qualityTags.join(', ')}`;
+  }
+
+  /**
    * Create a simple text-to-image workflow
    * This is a basic example - you'll need to customize based on your ComfyUI setup
    */
   createTextToImageWorkflow(prompt: string): Record<string, any> {
+    // Enhance the prompt with quality tags
+    const enhancedPrompt = this.enhancePrompt(prompt);
+    console.log('Original prompt:', prompt);
+    console.log('Enhanced prompt:', enhancedPrompt);
+
     return {
       "3": {
         "inputs": {
           "seed": Math.floor(Math.random() * 1000000000),
           "steps": 20,
           "cfg": 8,
-          "sampler_name": "euler",
-          "scheduler": "normal",
+          "sampler_name": "uni_pc_bh2",
+          "scheduler": "simple",
           "denoise": 1,
           "model": ["4", 0],
           "positive": ["6", 0],
           "negative": ["7", 0],
           "latent_image": ["5", 0]
         },
-        "class_type": "KSampler"
+        "class_type": "KSampler",
+        "_meta": {
+          "title": "KSampler"
+        }
       },
       "4": {
         "inputs": {
-          "ckpt_name": "sd_xl_base_1.0.safetensors"
+          "ckpt_name": "biglustydonutmixNSFW_v12.safetensors"
         },
-        "class_type": "CheckpointLoaderSimple"
+        "class_type": "CheckpointLoaderSimple",
+        "_meta": {
+          "title": "Load Checkpoint"
+        }
       },
       "5": {
         "inputs": {
-          "width": 1024,
-          "height": 1024,
+          "width": 1920,
+          "height": 1080,
           "batch_size": 1
         },
-        "class_type": "EmptyLatentImage"
+        "class_type": "EmptyLatentImage",
+        "_meta": {
+          "title": "Empty Latent Image"
+        }
       },
       "6": {
         "inputs": {
-          "text": prompt,
+          "text": enhancedPrompt,
           "clip": ["4", 1]
         },
-        "class_type": "CLIPTextEncode"
+        "class_type": "CLIPTextEncode",
+        "_meta": {
+          "title": "CLIP Text Encode (Prompt)"
+        }
       },
       "7": {
         "inputs": {
-          "text": "text, watermark, low quality, blurry",
+          "text": "text, watermark, low quality, worst quality, blurry, bad anatomy, bad proportions, ugly, deformed, distorted, poorly drawn, amateur, sketch, draft",
           "clip": ["4", 1]
         },
-        "class_type": "CLIPTextEncode"
+        "class_type": "CLIPTextEncode",
+        "_meta": {
+          "title": "CLIP Text Encode (Prompt)"
+        }
       },
       "8": {
         "inputs": {
           "samples": ["3", 0],
           "vae": ["4", 2]
         },
-        "class_type": "VAEDecode"
+        "class_type": "VAEDecode",
+        "_meta": {
+          "title": "VAE Decode"
+        }
       },
       "9": {
         "inputs": {
           "filename_prefix": "ComfyUI",
-          "images": ["8", 0]
+          "images": ["11", 0]
         },
-        "class_type": "SaveImage"
+        "class_type": "SaveImage",
+        "_meta": {
+          "title": "Save Image"
+        }
+      },
+      "10": {
+        "inputs": {
+          "model_name": "2xNomosUni_compact_otf_medium.safetensors"
+        },
+        "class_type": "UpscaleModelLoader",
+        "_meta": {
+          "title": "Load Upscale Model"
+        }
+      },
+      "11": {
+        "inputs": {
+          "grain_intensity": 0.04,
+          "saturation_mix": 0.5,
+          "batch_size": 4,
+          "images": ["12", 0]
+        },
+        "class_type": "FastFilmGrain",
+        "_meta": {
+          "title": "🎞️ Fast Film Grain"
+        }
+      },
+      "12": {
+        "inputs": {
+          "upscale_model": ["10", 0],
+          "image": ["8", 0]
+        },
+        "class_type": "ImageUpscaleWithModel",
+        "_meta": {
+          "title": "Upscale Image (using Model)"
+        }
+      },
+      "13": {
+        "inputs": {
+          "enabled": true,
+          "swap_model": "hyperswap_1b_256.onnx",
+          "facedetection": "YOLOv5n",
+          "face_restore_model": "GFPGANv1.4.pth",
+          "face_restore_visibility": 1,
+          "codeformer_weight": 1,
+          "detect_gender_input": "no",
+          "detect_gender_source": "no",
+          "input_faces_index": "0",
+          "source_faces_index": "0",
+          "console_log_level": 1,
+          "source_image": ["14", 0]
+        },
+        "class_type": "ReActorFaceSwap",
+        "_meta": {
+          "title": "ReActor 🌌 Fast Face Swap"
+        }
+      },
+      "14": {
+        "inputs": {
+          "image": "content.png"
+        },
+        "class_type": "LoadImage",
+        "_meta": {
+          "title": "Load Image"
+        }
       }
     };
   }

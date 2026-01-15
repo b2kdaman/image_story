@@ -149,8 +149,8 @@ export class LMStudioClient {
     });
 
     return this.chatCompletion(messages, {
-      temperature: 0.8,
-      max_tokens: 800
+      temperature: 0.9,
+      max_tokens: 600
     });
   }
 

@@ -7,13 +7,36 @@ export interface ParsedResponse {
 }
 
 export function parseStoryResponse(response: string): ParsedResponse {
-  // Extract story text between [STORY] and [/STORY]
-  const storyMatch = response.match(/\[STORY\]([\s\S]*?)\[\/STORY\]/i);
-  const storyText = storyMatch ? storyMatch[1].trim() : response;
+  console.log('Parser: Processing response of length:', response.length);
+
+  // Remove DeepSeek R1 thinking tags if present
+  let cleanedResponse = response.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+
+  console.log('Parser: Cleaned response length:', cleanedResponse.length);
+
+  // Try multiple tag variations for more flexibility
+  let storyMatch = cleanedResponse.match(/\[STORY\]([\s\S]*?)\[\/STORY\]/i);
+
+  // If no match, try without closing tag
+  if (!storyMatch) {
+    storyMatch = cleanedResponse.match(/\[STORY\]([\s\S]*?)(?=\[IMAGE\]|$)/i);
+  }
+
+  const storyText = storyMatch ? storyMatch[1].trim() : cleanedResponse;
 
   // Extract image prompt between [IMAGE] and [/IMAGE]
-  const imageMatch = response.match(/\[IMAGE\]([\s\S]*?)\[\/IMAGE\]/i);
+  let imageMatch = cleanedResponse.match(/\[IMAGE\]([\s\S]*?)\[\/IMAGE\]/i);
+
+  // If no match, try without closing tag
+  if (!imageMatch) {
+    imageMatch = cleanedResponse.match(/\[IMAGE\]([\s\S]*?)$/i);
+  }
+
   const imagePrompt = imageMatch ? imageMatch[1].trim() : '';
+
+  console.log('Parser: Found story?', !!storyMatch);
+  console.log('Parser: Found image prompt?', !!imageMatch);
+  console.log('Parser: Image prompt length:', imagePrompt.length);
 
   return {
     storyText,

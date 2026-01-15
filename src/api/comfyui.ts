@@ -143,8 +143,8 @@ export class ComfyUIClient {
       },
       "5": {
         "inputs": {
-          "width": 1920,
-          "height": 1080,
+          "width": 1024,
+          "height": 1024,
           "batch_size": 1
         },
         "class_type": "EmptyLatentImage",

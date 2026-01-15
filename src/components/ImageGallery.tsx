@@ -72,49 +72,61 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ messages, isGenerati
         </div>
       ) : imagesMessages.length > 0 ? (
         <>
-          <div className={`image-display ${isAnimating ? 'animating' : ''}`}>
-            <img
-              src={currentMessage.imageUrl}
-              alt={`Scene ${currentIndex + 1}`}
-              className="gallery-image"
-            />
-            <div className="image-caption">
-              <p>{currentMessage.content}</p>
-            </div>
-          </div>
-
-          {/* Navigation Controls */}
-          <div className="gallery-controls">
+          <div className="gallery-viewer">
+            {/* Left Navigation */}
             <button
-              className="nav-button prev"
+              className="nav-button nav-left"
               onClick={goToPrevious}
               disabled={currentIndex === 0}
             >
               ‹
             </button>
 
-            <div className="pagination-dots">
-              {imagesMessages.map((_, index) => (
-                <button
-                  key={index}
-                  className={`dot ${index === currentIndex ? 'active' : ''}`}
-                  onClick={() => goToIndex(index)}
-                  aria-label={`Go to image ${index + 1}`}
+            {/* Image Display */}
+            <div className={`image-display ${isAnimating ? 'animating' : ''}`}>
+              <div className="image-wrapper" title={currentMessage.imagePrompt || 'No prompt available'}>
+                <img
+                  src={currentMessage.imageUrl}
+                  alt={`Scene ${currentIndex + 1}`}
+                  className="gallery-image"
                 />
-              ))}
+                {currentMessage.imagePrompt && (
+                  <div className="image-tooltip">
+                    <div className="tooltip-icon">ℹ️</div>
+                    <div className="tooltip-content">
+                      <strong>Image Prompt:</strong>
+                      <p>{currentMessage.imagePrompt}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Bottom Controls */}
+              <div className="gallery-bottom-controls">
+                <div className="pagination-dots">
+                  {imagesMessages.map((_, index) => (
+                    <button
+                      key={index}
+                      className={`dot ${index === currentIndex ? 'active' : ''}`}
+                      onClick={() => goToIndex(index)}
+                      aria-label={`Go to image ${index + 1}`}
+                    />
+                  ))}
+                </div>
+                <div className="gallery-counter">
+                  {currentIndex + 1} / {imagesMessages.length}
+                </div>
+              </div>
             </div>
 
+            {/* Right Navigation */}
             <button
-              className="nav-button next"
+              className="nav-button nav-right"
               onClick={goToNext}
               disabled={currentIndex === imagesMessages.length - 1}
             >
               ›
             </button>
-          </div>
-
-          <div className="gallery-counter">
-            {currentIndex + 1} / {imagesMessages.length}
           </div>
 
           {isGenerating && (
